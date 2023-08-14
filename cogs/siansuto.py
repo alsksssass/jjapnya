@@ -46,7 +46,10 @@ class MyCog(commands.Cog):
                 emoji = guild.get_emoji(emoji_id)
                 headers = [cell.value for cell in ws[1]]
                 rows = list(ws.iter_rows(min_row=2, values_only=True))
-                self.row[str(ctx.guild.id)] = len(rows)-1
+                if str(ctx.guild.id) not in self.row:
+                    self.row[str(ctx.guild.id)] = len(rows)-1
+                else:
+                    self.row[str(ctx.guild.id)] +=len(rows)
                 self.clue_r[str(ctx.guild.id)] = num
                 aa= await ctx.channel.send(f'남은 총 단서{self.row[str(ctx.guild.id)]}개, \n열람횟수{self.clue_r[str(ctx.guild.id)]}개 남음')
                 self.c_clue_r[str(ctx.guild.id)].append(str(ctx.channel.id))
@@ -177,15 +180,28 @@ class MyCog(commands.Cog):
                         user_counts = {user: self.click_user_list[str(ctx.guild.id)].count(user) for user in self.click_user_list[str(ctx.guild.id)]}
                         self.row[str(ctx.guild.id)]-=1
                         self.output[str(ctx.guild.id)] = '\n'.join([f"{user}: {count}번" for user, count in user_counts.items()])
-                        for i in range(len(self.c_clue_r[str(ctx.guild.id)])):
+                        for i in range(0, len(self.c_clue_r[str(ctx.guild.id)]), 2):
+                                # 짝수 인덱스는 채널 값
                             try:
-                                channel = self.bot.get_channel(int(self.c_clue_r[str(ctx.guild.id)][0]))
-                                if i!=0:
-                                    message = await channel.fetch_message(int(self.c_clue_r[str(ctx.guild.id)][i]))
-                                    await message.edit(content=f'남은 총 단서{self.row[str(ctx.guild.id)]}개, \n열람횟수{self.clue_r[str(ctx.guild.id)]}개 남음\n{self.output[str(ctx.guild.id)]}')
+                                channel_id = self.c_clue_r[str(ctx.guild.id)][i]
+                                channel = self.bot.get_channel(int(channel_id))
+                                
+                                # 홀수 인덱스는 메시지 값
+                                message_id = self.c_clue_r[str(ctx.guild.id)][i+1]
+                                message = await channel.fetch_message(int(message_id))
+                                
+                                # 메시지를 수정
+                                await message.edit(content=f'남은 총 단서{self.row[str(ctx.guild.id)]}개, \n열람횟수{self.clue_r[str(ctx.guild.id)]}개 남음\n{self.output[str(ctx.guild.id)]}')
                             except Exception as e:
                                 print(e)
+                                del self.c_clue_r[str(ctx.guild.id)][i:i+2]
                                 pass
+                        # for i in range(len(self.c_clue_r[str(ctx.guild.id)])):
+
+                        #         channel = self.bot.get_channel(int(self.c_clue_r[str(ctx.guild.id)][0]))
+                        #         if i!=0:
+                        #             message = await channel.fetch_message(int(self.c_clue_r[str(ctx.guild.id)][i]))
+                        #             await message.edit(content=f'남은 총 단서{self.row[str(ctx.guild.id)]}개, \n열람횟수{self.clue_r[str(ctx.guild.id)]}개 남음\n{self.output[str(ctx.guild.id)]}')
                     else:
                         try:
                             await interaction.response.send_message("추가 조사권이 없습니다.", delete_after=1)
@@ -363,11 +379,23 @@ class MyCog(commands.Cog):
                     user_counts = {user: self.click_user_list[str(ctx.guild.id)].count(user) for user in self.click_user_list[str(ctx.guild.id)]}
                     
                     self.output[str(ctx.guild.id)] = '\n'.join([f"{user}: {count}번" for user, count in user_counts.items()])
-                    for i in range(len(self.c_clue_r[str(ctx.guild.id)])):
-                        channel = self.bot.get_channel(int(self.c_clue_r[str(ctx.guild.id)][0]))
-                        if i!=0:
-                            message = await channel.fetch_message(int(self.c_clue_r[str(ctx.guild.id)][i]))
-                            await message.edit(content=f"{self.clue_r[str(ctx.guild.id)]}개 남음\n{self.output[str(ctx.guild.id)]}")
+                    # for i in range(len(self.c_clue_r[str(ctx.guild.id)])):
+                    #     channel = self.bot.get_channel(int(self.c_clue_r[str(ctx.guild.id)][0]))
+                    #     if i!=0:
+                    #         message = await channel.fetch_message(int(self.c_clue_r[str(ctx.guild.id)][i]))
+                    #         await message.edit(content=f"{self.clue_r[str(ctx.guild.id)]}개 남음\n{self.output[str(ctx.guild.id)]}")
+                    for i in range(0, len(self.c_clue_r[str(ctx.guild.id)]), 2):
+                            # 짝수 인덱스는 채널 값
+                        channel_id = self.c_clue_r[str(ctx.guild.id)][i]
+                        channel = self.bot.get_channel(int(channel_id))
+                        
+                        # 홀수 인덱스는 메시지 값
+                        message_id = self.c_clue_r[str(ctx.guild.id)][i+1]
+                        message = await channel.fetch_message(int(message_id))
+                        
+                        # 메시지를 수정
+                        await message.edit(content=f"{self.clue_r[str(ctx.guild.id)]}개 남음\n{self.output[str(ctx.guild.id)]}")
+
                     print(self.output[str(ctx.guild.id)])
                 else:
                     try:

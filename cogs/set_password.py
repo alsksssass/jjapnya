@@ -72,7 +72,7 @@ class SetPassword(commands.Cog):
     @commands.hybrid_command(name='비번기록', with_app_command=True, description="채널에 !비번으로 출력될 내용을 기록합니다.")
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
-    async def slash_with_app_command(self, ctx: commands.Context, password: str, content: str):
+    async def slash_with_app_command(self, ctx: commands.Context, password: str, *,content: str):
         if hasattr(ctx, 'interaction') and ctx.interaction is not None:
             await ctx.send(content='https://i.imgur.com/gk3iHuX.gif',delete_after=0.00001)
         await self.save_data(ctx,ctx.guild.id, str(ctx.channel.id), password, content)

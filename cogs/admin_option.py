@@ -217,13 +217,13 @@ class Admin_option(commands.Cog):
         member_guilds.sort(key=lambda x: x.get_member(member_id).joined_at, reverse=True)
         play_list.append(f"총 {len(member_guilds)}개 \n")
         # 찾은 길드의 이름을 출력
-        for guild in member_guilds:
+        for i, guild in enumerate(member_guilds):
             user_join_date = guild.get_member(member_id).joined_at.strftime("%Y-%m-%d %H:%M:%S")
             if guild.owner and guild.owner.global_name:
                 owner_name = guild.owner.global_name
             else:
                 owner_name = guild.owner.name
-            play_list.append(f"--\n{guild.name} \n 진행자{owner_name}\n  최초 접속 날짜: {user_join_date}\n")
+            play_list.append(f"--\n{i+1}\n {guild.name}  \n 진행자{owner_name}\n   최초 접속 날짜: {user_join_date}\n")
             if len(''.join(play_list)) > 1500:
                 # Send the current guild_list and reset it
                 await ctx.author.send(''.join(play_list))
@@ -252,13 +252,13 @@ class Admin_option(commands.Cog):
         play_list.append(f"총 {len(member_guilds)}개 \n")
 
         # 찾은 길드의 이름을 출력
-        for guild in member_guilds:
+        for i, guild in enumerate(member_guilds):
             if guild.owner and guild.owner.global_name:
                 owner_name = guild.owner.global_name
             else:
                 owner_name = guild.owner.name
             guild_creation_date = guild.created_at.strftime("%Y-%m-%d %H:%M:%S")
-            play_list.append(f"--\n{guild.name} \n 진행자 {owner_name},\n  창설 날짜: {guild_creation_date}\n")
+            play_list.append(f"--\n{i+1}\n {guild.name}  \n 진행자 {owner_name},\n   창설 날짜: {guild_creation_date}\n")
             if len(''.join(play_list)) > 1500:
                 # Send the current guild_list and reset it
                 await ctx.author.send(''.join(play_list))
@@ -268,7 +268,7 @@ class Admin_option(commands.Cog):
         await ctx.send(f'해당 기록이 디엠으로 전송되었습니다.', delete_after=1)
 
         
-    @commands.hybrid_command ( name = '플레이비교', with_app_command = True,description="@로 선택한 다른 플레이어와 기록을 비교합니다." )
+    @commands.hybrid_command ( name = '플레이비교', aliases=['비교'], with_app_command = True,description="@로 선택한 다른 플레이어와 기록을 비교합니다." )
     @commands.guild_only()
     async def play_check(self, ctx, targets: commands.Greedy[discord.Member]):
         if isinstance(ctx.channel, discord.DMChannel):
@@ -294,14 +294,14 @@ class Admin_option(commands.Cog):
 
         # 타겟 사용자가 모두 참가하지 않은 길드가 있는 경우
         response = [f"모두 하지않은 크씬 {len(excluded_guilds)}개:\n"]
-        for guild in excluded_guilds:
+        for i, guild in enumerate(excluded_guilds):
             guild_name = guild.name
             if guild.owner and guild.owner.global_name:
                 owner_name = guild.owner.global_name
             else:
                 owner_name = guild.owner.name
             guild_creation_date = guild.created_at.strftime("%Y-%m-%d %H:%M:%S")
-            formatted_line = f"--\n [{guild.name}]\n  진행자: [{owner_name}]\n   창설날짜:[{guild_creation_date}]\n    플레이한 숫자: [{guild.member_count}]\n"
+            formatted_line = f"--\n{i+1}\n [{guild.name}]\n  진행자: [{owner_name}]\n   창설날짜:[{guild_creation_date}]\n    플레이한 숫자: [{guild.member_count}]\n"
             response.append(formatted_line)
             if len(''.join(response)) > 1500:
                 # Send the current guild_list and reset it

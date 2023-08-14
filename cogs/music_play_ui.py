@@ -40,7 +40,19 @@ ydl_opts = {
 import yt_dlp
 
 def is_url_playable(url: str) -> bool:
-    ydl_opts = {'quiet': True}
+    ydl_opts = {
+    'format': 'bestaudio/best',
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',
+        'preferredquality': '192',
+    }],
+    'logtostderr': True,
+    'extract_flat': True,
+    'skip_download': True,
+    'force-ipv4': True,
+    'cachedir': False,
+    }
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         try:
@@ -350,6 +362,7 @@ class MusicControl(commands.Cog):
                 #     self.current_song[str(interaction.guild.id)]=url
                 #     print('요기')
             if button == f'{guild_id}Play/Pause':
+                await interaction.response.defer()
                 voice_state = interaction.user.voice
                 if voice_state is None:
                     await interaction.response.send_message('음성채널에 먼저 접속 하셔야 합니다.', delete_after=0.5)
@@ -406,6 +419,9 @@ class MusicControl(commands.Cog):
                             track=0
                         url = self.playlists[str(interaction.guild.id)][track]
                     self.state='재생중'
+                    if vc.is_playing():
+                        print('재생중멈춰지나?')
+                        return
                     if url.startswith('http'):
                         info1 = get_video_info(url)
 
@@ -420,15 +436,16 @@ class MusicControl(commands.Cog):
                     self.current_song[str(interaction.guild.id)]=url
                     print(self.current_song[str(interaction.guild.id)])
                     voice_state = interaction.user.voice
-                    if interaction.response.is_done:
+                    if interaction.response.is_done():
                         print('asdss')
                         try:
                             await interaction.response.send_message(f"재생 {video_title}", delete_after=0.5)
                         except:
+                            print('이미응답')
                             await interaction.message.channel.send(f"재생 {video_title}", delete_after=0.5)
-                    if not interaction.response.is_done:
-                        print('asd123')
-                        await interaction.message.channel.send(f"재생 {video_title}", delete_after=0.5)
+                    # if not interaction.response.is_done:
+                    #     print('asd123')
+                    #     await interaction.message.channel.send(f"재생 {video_title}", delete_after=0.5)
                     voice_channel = voice_state.channel
                     try:# vc = await voice_channel.connect()
                         if url.startswith('http'):

@@ -32,7 +32,7 @@ class Set_record(commands.Cog):
         if not ctx.author.guild_permissions.administrator:
             await ctx.channel.send('권한이 없습니다', delete_after=1)
             return
-
+        print(content)
         # Use the current channel if no channel is specified
         
 
