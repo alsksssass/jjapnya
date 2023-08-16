@@ -37,12 +37,12 @@ def get_video_info(url: str):
             return None
     return video_info
 
-def choose_best_audio(formats: list):
-    audio_format = None
-    for f in formats:
-        if f['acodec'] != 'none' and (audio_format is None or f['abr'] > audio_format['abr']):
-            audio_format = f
-    return audio_format
+# def choose_best_audio(formats: list):
+#     audio_format = None
+#     for f in formats:
+#         if f['acodec'] != 'none' and (audio_format is None or f['abr'] > audio_format['abr']):
+#             audio_format = f
+#     return audio_format
 
 
 class PlayMusic(commands.Cog):
@@ -87,8 +87,8 @@ class PlayMusic(commands.Cog):
             
             
             
-            audio_format = choose_best_audio(video_info['formats'])
-            audio_url = audio_format['url']
+            # audio_format = choose_best_audio(video_info['formats'])
+            audio_url = video_info['url']
             audio_title = video_info['title']
 
 
@@ -103,9 +103,8 @@ class PlayMusic(commands.Cog):
                 return
             
             
-            
-            audio_format = choose_best_audio(video_info['formats'])
-            audio_url = audio_format['url']
+            # audio_format = choose_best_audio(video_info['formats'])
+            audio_url = video_info['url']
             audio_title = video_info['title']
             # Add your code here to play the song using the `url` variable
 
@@ -173,6 +172,7 @@ class PlayMusic(commands.Cog):
         if hasattr(ctx, 'interaction') and ctx.interaction is not None:
             await ctx.send(content='https://i.imgur.com/gk3iHuX.gif',delete_after=0.00001)
         await self.playing_music(ctx,file_name)
+        # await ctx.send('현재 서버오류로 수정중에 있음.')
 
     # @commands.command(name='볼륨')
     # async def 볼륨(self,ctx: commands.Context,volume: int):

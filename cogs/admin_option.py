@@ -28,7 +28,10 @@ class Admin_option(commands.Cog):
         
     async def module(self,ctx):
         await ctx.channel.send('ping')
-    
+    async def create_invite(self,channel):
+        if channel.permissions_for(channel.guild.me).create_instant_invite:
+            return await channel.create_invite()
+        return None
     @commands.command()
     async def 길드정보(self, ctx):
         if ctx.author.id == 317655426868969482:
@@ -376,6 +379,28 @@ class Admin_option(commands.Cog):
         message = ''.join(play_list)
         await send_message(ctx, message)
         await ctx.send(f'해당 내용이 디엠으로 전송되었습니다.', delete_after=1)
+    @commands.hybrid_command ( name = '타로마스터', with_app_command = True,description="자동화 크신 타로마스터 무료!feat.소진" )
+    async def send_invite(self,ctx):
+        guild_id=812915040713310250
+        channel_id=1022085158960115795
+        guild = discord.utils.find(lambda g: g.id == guild_id, self.bot.guilds)
+        if guild is not None:
+            channel = guild.get_channel(channel_id)
+            if channel is not None:
+                invite = await self.create_invite(channel)
+                if invite is not None:
+                    try:
+                        await ctx.author.send(f"{guild.name} 서버의 {channel.name} 채널 초대 링크: {invite}")
+                        await ctx.author.send(f"함께할 인원들을 모은뒤 같이할 날짜를 정하고 롤을 정하고 ``!롤 역할이름`` 으로 롤지 수령후 정해진 날짜에 모여서 진행하시면 됩니다.")
+                        await ctx.author.send(f"DM허용 필수.")
+                    except discord.errors.Forbidden:
+                        await ctx.send("DM을 전송할 수 없습니다. DM 전송을 허용하도록 설정해주세요.")
+                else:
+                    await ctx.send("해당 채널에서 초대 링크를 생성할 수 없습니다.")
+            else:
+                await ctx.send("해당 서버에 지정한 ID를 가진 채널이 존재하지 않습니다.")
+        else:
+            await ctx.send("지정한 ID를 가진 서버를 찾을 수 없습니다.")
 
     # @commands.command()
     # async def 업로드(self, ctx):

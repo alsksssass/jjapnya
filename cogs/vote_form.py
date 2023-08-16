@@ -20,6 +20,7 @@ from urllib.parse import urlparse
 from discord import Embed
 import openpyxl
 import aiohttp
+import pyperclip
 
 prev_sent_message = None
 class Vote(commands.Cog):
@@ -108,6 +109,22 @@ class Vote(commands.Cog):
                         button_dict[nick_name] = Button(label=nick_name, style = discord.ButtonStyle.green, custom_id=nick_name)
                         # view.add_item(button_dict[channels_nick_name.index(nick_name)])
                         button_list.append(button_dict[nick_name])
+                # async def button_callback1(interaction):
+                #     print('버튼눌림')
+                #     print('여기옴')
+                #     print(self.result_message)
+                #     text_to_copy = "\n".join(self.result_message)
+                #     print(text_to_copy)
+                #     pyperclip.copy(text_to_copy)
+                #     await interaction.response.send_message(f'클립보드에 복사됨')
+                # async def button_callback12(interaction):
+                #     print('버튼눌림22')
+                #     print('여기옴11')
+                #     print(self.result_message)
+                #     text_to_copy = "\n".join(self.result_message)
+                #     print(text_to_copy)
+                #     pyperclip.copy(text_to_copy)
+                #     await interaction.response.send_message(f'클립보드에 복사됨')
                 
                 # end_button = Button(label="!종료!", style=discord.ButtonStyle.red, custom_id="종료")
                 # button_list.append(end_button)
@@ -116,6 +133,14 @@ class Vote(commands.Cog):
                 for value in button_dict.values():
                     value.callback = button_callback
                     view.add_item(value)
+                # view1 = View(timeout=None)
+                # guild_id=str(ctx.guild.id)
+                # copy_result=Button(label='결과복사', style=discord.ButtonStyle.primary, custom_id=f'{guild_id}_copy')
+                # copy_result1=Button(label='기록용복사', style=discord.ButtonStyle.primary, custom_id=f'{guild_id}_result')
+                # view1.add_item(copy_result)
+                # copy_result.callback = button_callback1
+                # view1.add_item(copy_result1)
+                # copy_result1.callback = button_callback12
                 
                 a=await ctx.channel.send(content=message_content,view=view)
                 

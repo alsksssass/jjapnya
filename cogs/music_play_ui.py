@@ -11,6 +11,7 @@ import random
 import requests
 import isodate
 from mutagen import File, MutagenError
+from utils.video_utils import get_video_info,choose_best_audio
 # from pathlib import Path
 # import urllib.request
 # import urllib.error
@@ -20,72 +21,87 @@ import traceback
 # import logging
 # import ffmpeg
 # logging.basicConfig(level=logging.DEBUG)
+import youtube_dl
 
 YOUTUBE_API_KEY ='AIzaSyDfcoQyQq2lcevMuF0_6sngn-8ww5d1M68'
 ydl_opts = {
-    'format': 'bestaudio/best',
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
-        'preferredquality': '192',
-    }],
-    'logtostderr': True,
-    'extract_flat': True,
-    'skip_download': True,
-    'force-ipv4': True,
-    'cachedir': False,
-    
+'format': 'bestaudio/best',
+'postprocessors': [{
+    'key': 'FFmpegExtractAudio',
+    'preferredcodec': 'mp3',
+    'preferredquality': '320',
+}],
+'logtostderr': True,
+'extract_flat': True,
+'skip_download': True,
+'force-ipv4': True,
+'cachedir': False,
 }
 
-import yt_dlp
 
-def is_url_playable(url: str) -> bool:
-    ydl_opts = {
-    'format': 'bestaudio/best',
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
-        'preferredquality': '192',
-    }],
-    'logtostderr': True,
-    'extract_flat': True,
-    'skip_download': True,
-    'force-ipv4': True,
-    'cachedir': False,
-    }
+
+# def is_url_playable(url: str) -> bool:
+#     ydl_opts = {
+#     'format': 'bestaudio/best',
+#     'postprocessors': [{
+#         'key': 'FFmpegExtractAudio',
+#         'preferredcodec': 'mp3',
+#         'preferredquality': '192',
+#     }],
+#     'logtostderr': True,
+#     'extract_flat': True,
+#     'skip_download': True,
+#     'force-ipv4': True,
+#     'cachedir': False,
+#     }
     
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
-            video_info = ydl.extract_info(url, download=False)
+#     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+#         try:
+#             video_info = ydl.extract_info(url, download=False)
+#             return True
+#         except yt_dlp.utils.DownloadError:
+#             return False
+#         except yt_dlp.utils.ExtractorError:
+#             return False
+
+def check_audio_url_validity(url):
+    try:
+        response = requests.head(url)
+        # response = requests.get(url, stream=True)
+        if response.status_code == 200:
             return True
-        except yt_dlp.utils.DownloadError:
-            return False
-        except yt_dlp.utils.ExtractorError:
-            return False
+        else:
+            response = requests.head(url)
+            # response = requests.get(url, stream=True)
+            if response.status_code == 200:
+                return True
+            else:
+                return False
+    except requests.exceptions.RequestException as e:
+        return False
 
+# def get_video_info(url: str):
+#     while True:
+#         try:
+#             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+#                 video_info = ydl.extract_info(url, download=False)
+#             new_url=video_info['url']
+#             if not check_audio_url_validity(new_url):
+#                 print(f"URL '{url}' is not playable. Retrying...")
+#                 continue
+#             break
+#         except yt_dlp.utils.DownloadError as e:
+#             print('여기서 에러남7')
+#             print(f"다운로드 오류: {e}")
+#             return None
+#         except yt_dlp.utils.ExtractorError as e:
+#             print('여기서 에러남8')
+#             print(f"URL에서 정보 추출 오류: {e}")
+#             return None
+#         except requests.exceptions.HTTPError as errh:
+#             print('여기서 에러남1')
 
-def get_video_info(url: str):
-    while True:
-        try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                video_info = ydl.extract_info(url, download=False)
-            new_url=video_info['url']
-            if not check_audio_url_validity(new_url):
-                print(f"URL '{url}' is not playable. Retrying...")
-                continue
-            break
-        except yt_dlp.utils.DownloadError as e:
-            print('여기서 에러남7')
-            print(f"다운로드 오류: {e}")
-            return None
-        except yt_dlp.utils.ExtractorError as e:
-            print('여기서 에러남8')
-            print(f"URL에서 정보 추출 오류: {e}")
-            return None
-        except requests.exceptions.HTTPError as errh:
-            print('여기서 에러남1')
-
-    return video_info
+#     return video_info
 
 # def get_video_info(url: str):
 #     try:
@@ -155,6 +171,9 @@ def check_audio_url_validity(url):
 #     except requests.exceptions.RequestException as err:
 #         print ("Something went wrong",err)
 
+
+
+
 def get_video_info1(url):
     YOUTUBE_API_KEY ='AIzaSyDfcoQyQq2lcevMuF0_6sngn-8ww5d1M68'
     video_id=extract_video_id(url=url)
@@ -206,7 +225,7 @@ class MusicControl(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.playlists = {}  # {guild_id: [song1_url, song2_url, ...]}
-        self.repeat = None  # {guild_id: False}
+        self.repeat = {} # {guild_id: False}
         # self.volume = None
         self.volume = self.bot.vol_l
         self.current_song={}
@@ -219,6 +238,7 @@ class MusicControl(commands.Cog):
         self.music_list=[]
         self.shuffle_list={}
         self.file={}
+        self.playing = {} # {guild_id: False}
     class AddButton(discord.ui.Button):
         def __init__(self, bot,video_url,keyword, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -362,7 +382,7 @@ class MusicControl(commands.Cog):
                 #     self.current_song[str(interaction.guild.id)]=url
                 #     print('요기')
             if button == f'{guild_id}Play/Pause':
-                await interaction.response.defer()
+                # await interaction.response.defer()
                 voice_state = interaction.user.voice
                 if voice_state is None:
                     await interaction.response.send_message('음성채널에 먼저 접속 하셔야 합니다.', delete_after=0.5)
@@ -408,7 +428,11 @@ class MusicControl(commands.Cog):
                 # lis_mun=len(self.playlists[str(interaction.guild.id)])
                 # if lis_mun >0 :
                 else:
-                    if track is None and self.current_song[str(interaction.guild.id)] is None and self.repeat != '셔플재생':
+                    # vc.stop()
+                    if vc.is_playing():
+                        print('재생중 반려')
+                        return
+                    if track is None and self.current_song[str(interaction.guild.id)] is None and self.repeat[str(interaction.guild.id)] != '셔플재생':
                         print('asdasdw22222')
                         url = self.playlists[str(interaction.guild.id)][0]
                     # elif self.repeat == '셔플재생':
@@ -419,16 +443,17 @@ class MusicControl(commands.Cog):
                             track=0
                         url = self.playlists[str(interaction.guild.id)][track]
                     self.state='재생중'
-                    if vc.is_playing():
-                        print('재생중멈춰지나?')
-                        return
                     if url.startswith('http'):
-                        info1 = get_video_info(url)
-
-                        url2 = info1['url']
-                        video_title = info1['title']
-
-
+                        # info1 = get_video_info(url)
+                        # print(info1)
+                        # url2 = info1['url']
+                        # video_title = info1['title']
+                        video_info = get_video_info(url)
+                        # print(video_info)
+                        # audio_format = choose_best_audio(video_info['formats'])
+                        # print(audio_format)
+                        url2 = video_info['url']
+                        video_title = video_info['title']
                     else:
                         folder_path = f'./sound/{str(interaction.guild.id)}'
                         url2=os.path.join(folder_path, url)
@@ -436,13 +461,14 @@ class MusicControl(commands.Cog):
                     self.current_song[str(interaction.guild.id)]=url
                     print(self.current_song[str(interaction.guild.id)])
                     voice_state = interaction.user.voice
-                    if interaction.response.is_done():
-                        print('asdss')
-                        try:
-                            await interaction.response.send_message(f"재생 {video_title}", delete_after=0.5)
-                        except:
-                            print('이미응답')
-                            await interaction.message.channel.send(f"재생 {video_title}", delete_after=0.5)
+                    # if interaction.response.is_done():
+                    #     print('asdss')
+                    # await interaction.response.send_message(f"재생 {video_title}", delete_after=0.5)
+                    try:
+                        await interaction.response.send_message(f"재생 {video_title}", delete_after=0.5)
+                    except:
+                        print('이미응답')
+                        await interaction.message.channel.send(f"재생 {video_title}", delete_after=0.5)
                     # if not interaction.response.is_done:
                     #     print('asd123')
                     #     await interaction.message.channel.send(f"재생 {video_title}", delete_after=0.5)
@@ -455,13 +481,13 @@ class MusicControl(commands.Cog):
                         else:
                             audio_source = discord.FFmpegPCMAudio(url2)
                         print('asd11111')
-                    
                         print('재생포인트')
                         vc.play(discord.PCMVolumeTransformer(audio_source, self.volume[guild_id]))
                     except Exception as e:
                         print('dd>>')
                         print(e)
-                        vc.play(discord.PCMVolumeTransformer(audio_source, self.volume[guild_id]))
+                        return
+                        # vc.play(discord.PCMVolumeTransformer(audio_source, self.volume[guild_id]))
                     try:# await self.music(ctx,rest=True,inuser_id=str(interaction.user.id))
                         embed= self.embed(title=None,file_path=f'./sound/{str(interaction.guild.id)}',guild_id=str(interaction.guild.id),name=str(interaction.user.global_name)or str(interaction.user.name))
                     except:
@@ -481,11 +507,17 @@ class MusicControl(commands.Cog):
                 # else:
                 #     print('asd????')
                 #     vc.play
+                self.playing[str(guild_id)] = '재생'
                 while vc.is_playing():
+                    # if vc.stop():
+                    #     self.playing[str(guild_id)] = '셀렉'
+                    #     break
                     await asyncio.sleep(1)
+                # vc.stop()
                 # if vc.is_playing() or vc.is_paused():
                 #     pass
-                if self.repeat == '일반재생'and not vc.is_paused():
+                print(self.playing[str(guild_id)])
+                if self.repeat[str(interaction.guild.id)] == '일반재생'and not vc.is_paused()and self.playing[str(guild_id)] != '셀렉':
                     print('재생에서 일반재생')
                     vc.stop()
                     self.state='정지'
@@ -499,7 +531,7 @@ class MusicControl(commands.Cog):
                         message = await channel.fetch_message(int(self.msg[guild_id][0]))
                         await message.edit(embed=embed)
                     return
-                elif self.repeat == '순차재생'and not vc.is_paused():
+                elif self.repeat[str(interaction.guild.id)] == '순차재생'and not vc.is_paused()and self.playing[str(guild_id)] != '셀렉':
                     print('재생에서 순차재생')
                     if self.current_song[str(interaction.guild.id)] != None:
                         current_index = self.playlists[str(interaction.guild.id)].index(self.current_song[str(interaction.guild.id)])
@@ -517,14 +549,14 @@ class MusicControl(commands.Cog):
                     # await self.play_next(interaction,index=current_index)
                     await self.on_button_click(interaction,button=f'{guild_id}Play/Pause',track=current_index)
                     return
-                elif self.repeat == '반복재생'and not vc.is_paused():
+                elif self.repeat[str(interaction.guild.id)] == '반복재생'and not vc.is_paused()and self.playing[str(guild_id)] != '셀렉':
                     print('재생에서 반복재생')
                     print('반복재생')
                     current_index = self.playlists[str(interaction.guild.id)].index(self.current_song[str(interaction.guild.id)])
                     # await self.play_next(interaction,index=current_index)
                     await self.on_button_click(interaction,button=f'{guild_id}Play/Pause',track=current_index)
                     return
-                elif self.repeat == '셔플재생'and not vc.is_paused():
+                elif self.repeat[str(interaction.guild.id)] == '셔플재생'and not vc.is_paused()and self.playing[str(guild_id)] != '셀렉':
                     print('재생에서 셔플재생')
                     print('셔플재생')
                     if self.current_song[str(interaction.guild.id)] == None:
@@ -545,7 +577,7 @@ class MusicControl(commands.Cog):
                 elif vc.is_paused():
                     pass
                 else:
-                    await ctx.send("플레이 리스트에 곡이 없습니다.", delete_after=0.5)
+                    # await ctx.send("플레이 리스트에 곡이 없습니다.", delete_after=0.5)
                     return
             
             elif button == f'{guild_id}Stop':
@@ -612,7 +644,7 @@ class MusicControl(commands.Cog):
                     # #     except:
                     # #         await interaction.message.channel.send(f"다음곡 재생", delete_after=0.5)
                     # # self.current_song[str(interaction.guild.id)]=name
-                    if self.repeat == '일반재생':
+                    if self.repeat[str(interaction.guild.id)] == '일반재생':
                         print('다음재생에서 일반재생')
                         current_index = self.playlists[str(interaction.guild.id)].index(self.current_song[str(interaction.guild.id)])
                         print(f'{current_index}기본번호')
@@ -696,9 +728,9 @@ class MusicControl(commands.Cog):
                 #     await interaction.response.send_message("다음곡이 없습니다.", delete_after=0.5)
                 #     return
             elif button == f'{guild_id}Repeat':
-                if self.repeat == '일반재생':
-                    self.repeat = '반복재생'
-                    await interaction.response.send_message(f"재생모드가[{self.repeat}]로 변경되었습니다.", delete_after=0.5)
+                if self.repeat[str(interaction.guild.id)] == '일반재생':
+                    self.repeat[str(interaction.guild.id)] = '반복재생'
+                    await interaction.response.send_message(f"재생모드가[{self.repeat[str(interaction.guild.id)]}]로 변경되었습니다.", delete_after=0.5)
                     # await self.music(ctx,rest=True,inuser_id=str(interaction.user.id))
                     embed= self.embed(title=None,file_path=f'./sound/{str(interaction.guild.id)}',guild_id=str(interaction.guild.id),name=str(interaction.user.global_name)or str(interaction.user.name))
                     try:
@@ -709,9 +741,9 @@ class MusicControl(commands.Cog):
                         message = await channel.fetch_message(int(self.msg[guild_id][0]))
                         await message.edit(embed=embed)
                     return
-                elif self.repeat == '반복재생':
-                    self.repeat = '순차재생'
-                    await interaction.response.send_message(f"재생모드가[{self.repeat}]로 변경되었습니다.", delete_after=0.5)
+                elif self.repeat[str(interaction.guild.id)] == '반복재생':
+                    self.repeat[str(interaction.guild.id)] = '순차재생'
+                    await interaction.response.send_message(f"재생모드가[{self.repeat[str(interaction.guild.id)]}]로 변경되었습니다.", delete_after=0.5)
                     # await self.music(ctx,rest=True,inuser_id=str(interaction.user.id))
                     embed= self.embed(title=None,file_path=f'./sound/{str(interaction.guild.id)}',guild_id=str(interaction.guild.id),name=str(interaction.user.global_name)or str(interaction.user.name))
                     try:
@@ -722,9 +754,9 @@ class MusicControl(commands.Cog):
                         message = await channel.fetch_message(int(self.msg[guild_id][0]))
                         await message.edit(embed=embed)
                     return
-                elif self.repeat == '순차재생':
-                    self.repeat = '일반재생'
-                    await interaction.response.send_message(f"재생모드가[{self.repeat}]로 변경되었습니다.", delete_after=0.5)
+                elif self.repeat[str(interaction.guild.id)] == '순차재생':
+                    self.repeat[str(interaction.guild.id)] = '일반재생'
+                    await interaction.response.send_message(f"재생모드가[{self.repeat[str(interaction.guild.id)]}]로 변경되었습니다.", delete_after=0.5)
                     embed= self.embed(title=None,file_path=f'./sound/{str(interaction.guild.id)}',guild_id=str(interaction.guild.id),name=str(interaction.user.global_name)or str(interaction.user.name))
                     try:
                         # View 내의 컴포넌트들을 순회하며 Select 컴포넌트를 찾습니다.
@@ -734,9 +766,9 @@ class MusicControl(commands.Cog):
                         message = await channel.fetch_message(int(self.msg[guild_id][0]))
                         await message.edit(embed=embed)
                     return
-                elif self.repeat == '셔플재생':
-                    self.repeat = '일반재생'
-                    await interaction.response.send_message(f"재생모드가[{self.repeat}]로 변경되었습니다.", delete_after=0.5)
+                elif self.repeat[str(interaction.guild.id)] == '셔플재생':
+                    self.repeat[str(interaction.guild.id)] = '일반재생'
+                    await interaction.response.send_message(f"재생모드가[{self.repeat[str(interaction.guild.id)]}]로 변경되었습니다.", delete_after=0.5)
                     # await self.music(ctx,rest=True,inuser_id=str(interaction.user.id))
                     embed= self.embed(title=None,file_path=f'./sound/{str(interaction.guild.id)}',guild_id=str(interaction.guild.id),name=str(interaction.user.global_name)or str(interaction.user.name))
                     try:
@@ -748,7 +780,7 @@ class MusicControl(commands.Cog):
                         await message.edit(embed=embed)
                     return
             elif button == f'{guild_id}Shuffle':
-                self.repeat = '셔플재생'
+                self.repeat[str(interaction.guild.id)] = '셔플재생'
                 if len(self.playlists[str(interaction.guild.id)])<0:
                     await interaction.response.send_message(f"리스트를 추가하고 눌러주세요", delete_after=0.5)
                 else:
@@ -756,7 +788,7 @@ class MusicControl(commands.Cog):
                         self.shuffle_list[interaction.guild.id] =[]
                     self.shuffle_list[str(interaction.guild.id)] = self.playlists[str(interaction.guild.id)][:]
                     random.shuffle(self.shuffle_list[str(interaction.guild.id)])
-                    await interaction.response.send_message(f"재생모드가[{self.repeat}]로 변경되었습니다.", delete_after=0.5)
+                    await interaction.response.send_message(f"재생모드가[{self.repeat[str(interaction.guild.id)]}]로 변경되었습니다.", delete_after=0.5)
                     # await self.music(ctx,rest=True,inuser_id=str(interaction.user.id))
                     embed= self.embed(title=None,file_path=f'./sound/{str(interaction.guild.id)}',guild_id=str(interaction.guild.id),name=str(interaction.user.global_name)or str(interaction.user.name))
                     try:
@@ -993,9 +1025,10 @@ class MusicControl(commands.Cog):
             if not interaction.user.guild_permissions.administrator:
                 await interaction.response.send_message("권한이 없습니다.", delete_after=0.5)
                 return
+            guild_id=str(interaction.guild.id)
+            self.playing[str(guild_id)] = '셀렉'
             ctx = await self.bot.get_context(interaction.message)
             song_url = interaction.data["values"]
-            guild_id=str(interaction.guild.id)
             url=''.join(song_url)
             # print(interaction.data['components'])
             # await interaction.response.send_message("선택되엇습니다.")
@@ -1143,10 +1176,10 @@ class MusicControl(commands.Cog):
                 embed.add_field(name="노래길이", value=None, inline=True)
                 embed.add_field(name="재생목록", value=f'{file_name}의{num}개음악', inline=True)
                 embed.add_field(name="볼륨", value=f'{(self.volume[guild_id]*100)}%', inline=True)
-                embed.add_field(name="재생모드", value=self.repeat)
+                embed.add_field(name="재생모드", value=self.repeat[str(guild_id)])
                 embed.add_field(name="다음곡", value=None, inline=True)
                 embed.add_field(name="조작자", value=name, inline=True)
-                embed.set_footer(text="짭냥이플레이어 V 0.25", icon_url="https://i.imgur.com/VlKtyVf.png")
+                embed.set_footer(text="짭냥이플레이어 V 0.30", icon_url="https://i.imgur.com/VlKtyVf.png")
                 return embed
             elif self.current_song[guild_id]!=None:
                 print('커런트송 오케')
@@ -1190,7 +1223,7 @@ class MusicControl(commands.Cog):
                             thumbnail_url='https://i.imgur.com/MwovhA7.gif'
                             print('645')
                 state=self.state
-                if self.repeat == '순차재생':
+                if self.repeat[str(guild_id)] == '순차재생':
                     print('순차재생')
                     index_s=self.playlists[guild_id].index(self.current_song[guild_id])
                     if index_s+1>=len(self.playlists[guild_id]):
@@ -1209,7 +1242,7 @@ class MusicControl(commands.Cog):
                         print(next_video_title)
                     else:
                         next_video_title = index_name
-                if self.repeat == '셔플재생':
+                if self.repeat[str(guild_id)] == '셔플재생':
                     print('셔플재생')
                     index_s=self.shuffle_list[guild_id].index(self.current_song[guild_id])
                     if index_s+1>=len(self.shuffle_list[guild_id]):
@@ -1224,7 +1257,7 @@ class MusicControl(commands.Cog):
                         next_video_title = next_info['title']
                     else:
                         next_video_title = index_name
-                if self.repeat == '반복재생':
+                if self.repeat[str(guild_id)] == '반복재생':
                     print('반복재생')
                     current_index = self.playlists[guild_id].index(self.current_song[guild_id])
                     # index=current_index
@@ -1236,7 +1269,7 @@ class MusicControl(commands.Cog):
                         next_video_title = next_info['title']
                     else:
                         next_video_title = current_index
-                if self.repeat == '일반재생':
+                if self.repeat[str(guild_id)] == '일반재생':
                     print('일반재생')
                     next_video_title = '현재곡 재생후 정지'
                 time_formatted = self.convert_seconds_to_time_format(seconds=d_time)
@@ -1246,10 +1279,10 @@ class MusicControl(commands.Cog):
                 embed.add_field(name="노래길이", value=time_formatted, inline=True)
                 embed.add_field(name="재생목록", value=f'{file_name}의{len(self.playlists[guild_id])}개음악', inline=True)
                 embed.add_field(name="볼륨", value=f'{(self.volume[guild_id]*100)}%', inline=True)
-                embed.add_field(name="재생모드", value=self.repeat)
+                embed.add_field(name="재생모드", value=self.repeat[str(guild_id)])
                 embed.add_field(name="다음곡", value=next_video_title, inline=True)
                 embed.add_field(name="조작자", value=name, inline=True)
-                embed.set_footer(text="짭냥이플레이어 V 0.25", icon_url="https://i.imgur.com/VlKtyVf.png")
+                embed.set_footer(text="짭냥이플레이어 V 0.30", icon_url="https://i.imgur.com/VlKtyVf.png")
                 return embed
         except Exception as e:
             traceback.print_exc()
@@ -1296,8 +1329,10 @@ class MusicControl(commands.Cog):
                 folder_path = f'./sound/{guild_id}'
                 if guild_id not in self.volume:
                     self.volume[str(ctx.guild.id)]=0.5
-                if self.repeat is None:
-                    self.repeat = '일반재생'
+                if guild_id not in self.repeat:
+                    self.repeat[str(guild_id)] = '일반재생'
+                if guild_id not in self.playing:
+                    self.playing[str(guild_id)] = '정지'
                 if rest==False:
                     try:
                         if guild_id in self.msg:
@@ -1461,6 +1496,7 @@ class MusicControl(commands.Cog):
         if hasattr(ctx, 'interaction') and ctx.interaction is not None:
             await ctx.send(content='https://i.imgur.com/gk3iHuX.gif',delete_after=0.00001)
         await self.music(ctx,rest=False)
+        # await ctx.send('현재 서버오류로 수정중에 있음.')
     @commands.hybrid_command ( name = '볼륨', with_app_command = True,description="봇의 음량을 조정합니다(1~99)값입력" )
     @commands.guild_only()
     async def 볼륨_with_app_command(self, ctx: commands.Context,volume: int):
