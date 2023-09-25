@@ -57,7 +57,7 @@ class Del_num(commands.Cog):
         messages_to_delete = await ctx.channel.purge(limit=limit, check=check)
 
         # Send deletion confirmation message and delete it after 5 seconds
-        status_message = await ctx.send(f'{len(messages_to_delete)}개의 메시지가 삭제되었습니다.!', delete_after=2)
+        status_message = await ctx.send(f'{day}일 이전의 메시지 를 제외한 {len(messages_to_delete)}개의 메시지가 삭제되었습니다.!', delete_after=2)
 
     # @commands.command(name='삭제')
     # async def prx_add(self, ctx, num: int):

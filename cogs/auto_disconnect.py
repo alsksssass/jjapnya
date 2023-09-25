@@ -1,11 +1,12 @@
 import discord
 from discord.ext import commands, tasks
+from .auto_guild_nick import Auto_nick
 
 class AutoDisconnect(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.auto_disconnect.start()
-
+        self.nick = Auto_nick(bot)
     def cog_unload(self):
         self.auto_disconnect.cancel()
 
@@ -19,9 +20,13 @@ class AutoDisconnect(commands.Cog):
         for vc in self.bot.voice_clients:
             if await self.is_bot_alone(vc.channel):
                     guild = vc.guild
+                    print(guild.id)
                     member = await guild.fetch_member(self.bot.user.id)
-                    nick = self.bot.oriname[str(guild.id)]
-                    await member.edit(nick=nick)
+                    try:
+                        nick = self.bot.oriname[str(guild.id)]
+                        await member.edit(nick=nick)
+                    except:
+                        await self.nick.get_nicknames()
                     if not str(guild.id) in self.bot.timer_runing:
                         self.bot.timer_runing[str(guild.id)]=False
                     self.bot.timer_runing[str(guild.id)]=False

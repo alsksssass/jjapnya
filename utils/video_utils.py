@@ -44,9 +44,9 @@ def get_video_info(url: str):
     try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 video_info = ydl.extract_info(url, download=False)
-    except yt_dlp.utils.DownloadError as e:
-            print(f"다운로드 오류: {e}")
-            return None
+    # except yt_dlp.utils.DownloadError as e:
+    #         print(f"다운로드 오류: {e}")
+    #         return None
     except yt_dlp.utils.ExtractorError as e:
             print(f"URL에서 정보 추출 오류: {e}")
             return None
