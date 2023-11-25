@@ -88,11 +88,14 @@ class C_list(commands.Cog):
                     user_info=(button_id, interaction.user.id)
                     role_name = rolls_dict[button_id]
                     if role_name is not None:
-                        role = discord.utils.get(ctx.guild.roles, name=role_name)
-                        if role:
-                            await member.add_roles(role)
-                        else:
-                            await ctx.send(f'오류: 역할 {role_name}을 찾을 수 없습니다.')
+                        roles = role_name.split(',')  # ','로 구분된 roll을 리스트 형태로 분리
+                        for role_name in roles:
+                            role = discord.utils.get(ctx.guild.roles, name=role_name.strip())  # 공백을 제거한 역할 이름으로 역할 찾기
+                            if role:
+                                await member.add_roles(role)
+                            else:
+                                await ctx.send(f'오류: 역할 {role_name}을 찾을 수 없습니다.')
+
                     
                     self.bot.player_l.append(user_info)
                     if i_num >= total:

@@ -515,9 +515,10 @@ class MusicControl(commands.Cog):
                         # View 내의 컴포넌트들을 순회하며 Select 컴포넌트를 찾습니다.
                         await interaction.message.edit(embed=embed)
                     except:
-                        channel = self.bot.get_channel(int(self.channel_id[guild_id][0]))
-                        message = await channel.fetch_message(int(self.msg[guild_id][0]))
-                        await message.edit(embed=embed)
+                        # channel = self.bot.get_channel(int(self.channel_id[guild_id][0]))
+                        # message = await channel.fetch_message(int(self.msg[guild_id][0]))
+                        # await message.edit(embed=embed)
+                        print("error")
                     return
                 elif self.repeat[str(interaction.guild.id)] == '순차재생'and not vc.is_paused()and self.playing[str(guild_id)] != '셀렉':
                     if self.current_song[str(interaction.guild.id)] != None:
